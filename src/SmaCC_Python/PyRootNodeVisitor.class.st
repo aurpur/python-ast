@@ -5,3 +5,9 @@ Class {
 	#classTraits : 'TPyRootNodeVisitor classTrait',
 	#category : #'SmaCC_Python'
 }
+
+{ #category : #generated }
+PyRootNodeVisitor >> visitSmaCCParseNode: aSmaCCParseNode [
+	^ self acceptNodes: aSmaCCParseNode sortedChildren.
+	
+]
