@@ -43,7 +43,7 @@ FamixPythonGenerator >> defineClasses [
 	attribute := builder newClassNamed: #Attribute.
 	class := builder newClassNamed: #Class.
 	containerEntity := builder newAbstractClassNamed: #ContainerEntity.
-	function := builder newAbstractClassNamed: #Function.
+	function := builder newClassNamed: #Function.
 	implicitVariable := builder newClassNamed: #ImplicitVariable.
 	import := builder newClassNamed: #Import.
 	inheritance := builder newClassNamed: #Inheritance.
@@ -109,6 +109,7 @@ FamixPythonGenerator >> defineHierarchy [
 	module --|> #TPackageable.
 	module --|> #TWithComments.
 	module --|> #TImportable.
+	module --|> #TWithFunctions.
 
 	namedEntity --|> #TInvocationsReceiver.
 	namedEntity --|> #TWithAnnotationInstances.
@@ -141,10 +142,11 @@ FamixPythonGenerator >> defineProperties [
 	super defineProperties.
 	(import property: #fromName type: #String) comment: 'from a import b
 	fromName is a'.
-	
-	(import property: #entityName type: #String) comment: 'from a import b
+
+	(import property: #entityName type: #String) comment:
+		'from a import b
 	entityName is b'.
-	
+
 	(import property: #asName type: #String) comment: 'import b as c
-	asName is c'
+	asName is c'.
 ]
