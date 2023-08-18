@@ -12,7 +12,7 @@ Class {
 
 { #category : #generated }
 PyExecNode >> acceptVisitor: aRootVisitor [
-	^ aRootVisitor visitExec: self
+	^ aRootVisitor visitFuncdef: self
 ]
 
 { #category : #generated }

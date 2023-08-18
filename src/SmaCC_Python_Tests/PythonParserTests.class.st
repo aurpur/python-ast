@@ -24979,7 +24979,8 @@ if __name__ == ''__main__'':
 
 { #category : #'tests - programs' }
 PythonParserTests >> testBig1 [
-	self parse: self codeBig1
+	| test |
+	test := self parse: self codeBig1
 ]
 
 { #category : #'tests - programs' }

@@ -131,16 +131,6 @@ TPyRootNodeVisitor >> visitExceptClause: anExceptClause [
 ]
 
 { #category : #generated }
-TPyRootNodeVisitor >> visitExec: anExec [
-	^ self visitRoot: anExec
-]
-
-{ #category : #generated }
-TPyRootNodeVisitor >> visitExprStmt: anExprStmt [
-	^ self visitRoot: anExprStmt
-]
-
-{ #category : #generated }
 TPyRootNodeVisitor >> visitFactor: aFactor [
 	^ self visitRoot: aFactor
 ]
@@ -166,8 +156,8 @@ TPyRootNodeVisitor >> visitFpdef: aFpdef [
 ]
 
 { #category : #generated }
-TPyRootNodeVisitor >> visitFuncdef: aFuncdef [
-	^ self visitRoot: aFuncdef
+TPyRootNodeVisitor >> visitFuncdef: anExprStmt [
+	^ self visitRoot: anExprStmt
 ]
 
 { #category : #generated }
