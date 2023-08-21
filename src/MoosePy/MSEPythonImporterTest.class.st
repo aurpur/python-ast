@@ -162,6 +162,24 @@ MSEPythonImporterTest >> testImportFamixFunctionKnowsItsModule [
 ]
 
 { #category : #'tests - classes' }
+MSEPythonImporterTest >> testImportFamixFunctionWithParameter [
+
+	| param funcName paramName func |
+	importer accept: pyDoc2.
+	funcName := 'sprite_collect_blocks_2.tryToPlaceWord'.
+	paramName := 'word'.
+	param := importer parameterNamed: funcName , '.' , paramName.
+	func := importer functionNamed: funcName.
+
+	self assert: func class equals: FamixPythonFunction.
+	self
+		assert: (func signature includesSubstring: paramName)
+		equals: true.
+	self assert: param class equals: FamixPythonParameter.
+	self assert: param name equals: paramName
+]
+
+{ #category : #'tests - classes' }
 MSEPythonImporterTest >> testImportFamixMethod [
 	
 	| mth | 
@@ -182,6 +200,24 @@ MSEPythonImporterTest >> testImportFamixMethodKnowsItsClass [
 	cl := importer classNamed: 'Player'.
 	self assert: mth parentType equals: cl.
 	self assert: mth parentType class equals: FamixPythonClass
+]
+
+{ #category : #'tests - classes' }
+MSEPythonImporterTest >> testImportFamixMethodWithParameter [
+
+	| param mthName paramName mth |
+	importer accept: pyDoc.
+	mthName := 'Player.__init__'.
+	paramName := 'y'.
+	param := importer parameterNamed: mthName , '.' , paramName.
+	mth := importer methodNamed: mthName.
+
+	self assert: mth class equals: FamixPythonMethod.
+	self
+		assert: (mth signature includesSubstring: paramName)
+		equals: true.
+	self assert: param class equals: FamixPythonParameter.
+	self assert: param name equals: paramName
 ]
 
 { #category : #'tests - classes' }
@@ -226,7 +262,7 @@ MSEPythonImporterTest >> testImportInvocation [
 grid[row].append(".")
 ').
 	self assert: importer invocations size equals: 1.
-	self assert: importer invocations anyOne class equals: PyPowerNode 
+	self assert: importer invocations anyOne class equals: FamixPythonInvocation 
 ]
 
 { #category : #'tests - module' }
@@ -237,7 +273,7 @@ for row in array:
 	grid[row].append(".")
 ').
 	self assert: importer invocations size equals: 1.
-	self assert: importer invocations anyOne class equals: PyPowerNode
+	self assert: importer invocations anyOne class equals: FamixPythonInvocation
 ]
 
 { #category : #'tests - module' }
@@ -250,7 +286,18 @@ for row in array:
 		grid[row].append(".")
 ').
 	self assert: importer invocations size equals: 2.
-	self assert: importer invocations anyOne class equals: PyPowerNode
+	self assert: importer invocations anyOne class equals: FamixPythonInvocation
+]
+
+{ #category : #'tests - module' }
+MSEPythonImporterTest >> testImportInvocationWithArguments [
+
+	importer accept: (self parseCode: '
+for row in array:
+	test(4, 25)
+').
+	self assert: importer invocations size equals: 2.
+	self assert: importer invocations anyOne class equals: FamixPythonInvocation
 ]
 
 { #category : #'tests - module' }

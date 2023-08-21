@@ -97,15 +97,22 @@ MSEPythonToFamixImporterVisitor >> createImport: anImport [
 ]
 
 { #category : #'private-entity-creation' }
-MSEPythonToFamixImporterVisitor >> createInvocation: aInvocationNode [ 
+MSEPythonToFamixImporterVisitor >> createInvocation: anInvocationNode [
 
-	| invocation |
+	| invocation canditate receiver sender args |
 	invocation := model newInvocation.
-	
-"	invocation  receiver: 'receiver' selector: 'candidate' arguments: 'arg' .
-	invocation sender: 'sender'."
-	invocations at: ('sender.receiver.canditate.position.', 100 atRandom asString) put: aInvocationNode.	
-	
+	canditate := anInvocationNode atom nameToken value.
+	receiver := 'receiver'.
+	sender := 'sender'.
+	args := (anInvocationNode trailers at: 1) arguments.
+
+	"invocation addCandidate: canditate."
+	"	invocation arguments: args ."
+
+	invocations
+		at: sender , '.' , receiver , '.' , canditate , '.position.'
+			, 100 atRandom asString
+		put: invocation
 ]
 
 { #category : #'private-entity-creation' }
