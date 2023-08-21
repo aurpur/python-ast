@@ -11,7 +11,8 @@ Class {
 
 { #category : #generated }
 PyExprStmtNode >> acceptVisitor: aRootVisitor [
-	^ aRootVisitor visitFuncdef: self
+
+	^ aRootVisitor visitSimpleStmt: self
 ]
 
 { #category : #generated }
