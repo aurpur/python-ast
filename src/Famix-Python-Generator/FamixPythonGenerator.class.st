@@ -18,7 +18,8 @@ Class {
 		'import',
 		'inheritance',
 		'function',
-		'module'
+		'module',
+		'indexedFileAnchor'
 	],
 	#category : #'Famix-Python-Generator'
 }
@@ -46,6 +47,7 @@ FamixPythonGenerator >> defineClasses [
 	function := builder newClassNamed: #Function.
 	implicitVariable := builder newClassNamed: #ImplicitVariable.
 	import := builder newClassNamed: #Import.
+	indexedFileAnchor := builder newClassNamed: #IndexedFileAnchor.
 	inheritance := builder newClassNamed: #Inheritance.
 	invocation := builder newClassNamed: #Invocation.
 	localVariable := builder newClassNamed: #LocalVariable.
@@ -63,7 +65,7 @@ FamixPythonGenerator >> defineHierarchy [
 
 	super defineHierarchy.
 	access --|> #TAccess.
-	
+
 	attribute --|> namedEntity.
 	attribute --|> #TAttribute.
 	attribute --|> #TInvocationsReceiver.
@@ -76,20 +78,25 @@ FamixPythonGenerator >> defineHierarchy [
 
 	containerEntity --|> namedEntity.
 	containerEntity --|> #TWithClasses.
-	
+
 	function --|> containerEntity.
 	function --|> #TFunction.
 	function --|> #TWithComments.
 	function --|> #TInvocable.
 	function --|> #TImportable.
 	function --|> #TWithImplicitVariables.
-	
+	function --|> #TWithInvocations.
+	function --|> #TInvocable.
+
 	implicitVariable --|> namedEntity.
 	implicitVariable --|> #TImplicitVariable.
 	implicitVariable --|> #TInvocationsReceiver.
 
 	import --|> #TImport.
-	
+
+	indexedFileAnchor --|> sourceAnchor.
+	indexedFileAnchor --|> #TIndexedFileNavigation.
+
 	inheritance --|> #TInheritance.
 
 	invocation --|> #TInvocation.
@@ -104,12 +111,15 @@ FamixPythonGenerator >> defineHierarchy [
 	method --|> #TMethod.
 	method --|> #TWithComments.
 	method --|> #TImportable.
-	
+	method --|> #TWithInvocations.
+	method --|> #TInvocable.
+
 	module --|> containerEntity.
 	module --|> #TPackageable.
 	module --|> #TWithComments.
 	module --|> #TImportable.
 	module --|> #TWithFunctions.
+	module --|> #TWithInvocations.
 
 	namedEntity --|> #TInvocationsReceiver.
 	namedEntity --|> #TWithAnnotationInstances.
