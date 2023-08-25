@@ -68,7 +68,7 @@ PythonASTVisitor >> visitArguments: anArgumentNode [
 { #category : #visiting }
 PythonASTVisitor >> visitAssign: aJsonNode [
 
-	| assign variables i myVariable variablesName myTarget target |
+	| assign  i  variablesName myTarget target |
 	assign := self newEntity: PythonASTAssign.
 	assign lineNumber: (aJsonNode at: #lineno).
 
