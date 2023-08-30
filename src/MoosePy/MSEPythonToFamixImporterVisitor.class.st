@@ -3,7 +3,8 @@ Class {
 	#superclass : #PyRootNodeVisitor,
 	#instVars : [
 		'model',
-		'sender'
+		'sender',
+		'layer'
 	],
 	#category : #'MoosePy-Visitors'
 }
@@ -108,18 +109,23 @@ MSEPythonToFamixImporterVisitor >> createImport: anImport ofName: aName [
 { #category : #'private-entity-creation' }
 MSEPythonToFamixImporterVisitor >> createInvocation: anInvocationNode [
 
-	| invocation tSize invocDict |
+	| invocation tSize invocDict  |
 	invocation := model newInvocation.
 	tSize := anInvocationNode trailers size.
 
 	invocDict := self extractInvocationInformation: anInvocationNode.
 
 
+	self updateLayer:(invocDict at: 'canditate').
+
+
 	invocation sender: sender top.
+	invocation cacheAt: 'layer' put: layer.
 	invocation cacheAt: 'canditate' put: (invocDict at: 'canditate').
 	invocation cacheAt: 'args' put: (invocDict at: 'args').
 	invocation cacheAt: 'receiver' put: (invocDict at: 'receiver').
-	invocation signature: (self signatureFromInvocation: anInvocationNode).
+	invocation signature:
+		(self signatureFromInvocation: anInvocationNode).
 
 	^ self setSourceAnchor: invocation from: anInvocationNode
 ]
@@ -205,17 +211,6 @@ MSEPythonToFamixImporterVisitor >> ensureImport: aImportNode hasName: name [
 	importNames := self importNames: aImportNode.
 
 	^ importNames includes: name
-]
-
-{ #category : #'private-entity-creation' }
-MSEPythonToFamixImporterVisitor >> ensureInvocation: aInvocationNode [
-
-	| cdtName |
-	cdtName := (self extractInvocationInformation: aInvocationNode) at: 'canditate'.
-
-
-	^ (self invocationCandidate: cdtName) ifNil: [
-		  self createInvocation: aInvocationNode ]
 ]
 
 { #category : #'private-entity-creation' }
@@ -421,6 +416,7 @@ MSEPythonToFamixImporterVisitor >> initialize [
 
 	super initialize.
 	sender := Stack new.
+	layer := 0.
 	model := FamixPythonModel new name: 'default Python Model'
 ]
 
@@ -564,6 +560,16 @@ MSEPythonToFamixImporterVisitor >> signatureFromInvocation: anInvocationNode [
 	^ signature copyWithoutAll: '"'
 ]
 
+{ #category : #'private-entity-creation' }
+MSEPythonToFamixImporterVisitor >> updateLayer: anInvocationCandiateName [
+
+	anInvocationCandiateName ifNotNil: [
+	((anInvocationCandiateName beginsWith: 'Conv')
+	| (anInvocationCandiateName beginsWith: 'Flatten')
+	| (anInvocationCandiateName beginsWith: 'Dense') )ifTrue: [
+		layer := layer + 1 ]]
+]
+
 { #category : #visiting }
 MSEPythonToFamixImporterVisitor >> visitArgument: anArgumentNode [
 
@@ -646,7 +652,7 @@ MSEPythonToFamixImporterVisitor >> visitImport: anImport [
 MSEPythonToFamixImporterVisitor >> visitPower: anInvocation [
 
 	anInvocation trailers ifNotEmpty: [
-		self ensureInvocation: anInvocation ].
+		self createInvocation: anInvocation ].
 
 	^ super visitPower: anInvocation
 ]
