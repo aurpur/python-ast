@@ -255,60 +255,71 @@ MSEPythonToFamixImporterVisitor >> ensureParameters: theParameters inMethodName:
 { #category : #'private-entity-creation' }
 MSEPythonToFamixImporterVisitor >> extractArgumentsInformation: aSignature [
 
-	| arguments argument buffer extractedList tmp res labelCleaned valueCleaned |
+	| arguments argument buffer extractedList tmp res labelCleaned valueCleaned buffer2 mySignature y  |
 	argument := Dictionary new.
 	arguments := OrderedCollection new.
 	extractedList := OrderedCollection new.
 
+	buffer2 := OrderedCollection new.
+
 	"Example : '(2,2), border_mode=''same'''"
 
 	"Extract ()"
-	buffer := $) split: aSignature.
+	mySignature := aSignature removeSuffix: ')'.
+	buffer := $( split: mySignature.
 
 
 	buffer do: [ :each |
+		(each indexOf: $)) > 0
+			ifTrue: [
+				y := $) split: each.
+				buffer2 add: ($, split: y first).
+				buffer2 add: y second ]
+			ifFalse: [ buffer2 add: each ] ].
+
+
+	buffer2 do: [ :each |
 		(each indexOf: $() > 0
 			ifTrue: [ extractedList add: (each copyWithoutAll: '(') ]
 			ifFalse: [ ($, split: each) do: [ :x | extractedList add: x ] ] ].
 
 
 
+
 	"Extract label with ="
 	res := extractedList collect: [ :each |
 		       argument := Dictionary new.
-		       (each indexOf: $=) > 0
+
+		       each isString
 			       ifTrue: [
-				       tmp := $= split: each.
+				       (each indexOf: $=) > 0
+					       ifTrue: [
+						       tmp := $= split: each.
 
-				       argument at: 'label' put: tmp first.
-				       argument at: 'value' put: tmp second ]
+						       argument at: 'label' put: tmp first.
+						       argument at: 'value' put: tmp second ]
+					       ifFalse: [ argument at: 'value' put: each ] ]
 			       ifFalse: [ argument at: 'value' put: each ].
-		       each = '' ifFalse: [ arguments add: argument ].
-		
-	
-		
-		 ].
+		       each = '' | (each = ' ') ifFalse: [ arguments add: argument ] ].
 
 
-	"Extract label clean label"
-	arguments do: [ :arg |
+	arguments do: [ :arg | "Clean label"
 		arg at: 'label' ifPresent: [
 			labelCleaned := ((arg at: 'label') copyWithoutAll: ',') trim.
 
-			arg at: 'label' put: labelCleaned ] ].
+			arg at: 'label' put: labelCleaned ].
 
-
-	"Extract label extract value"
-	arguments do: [ :arg |
+		"Clean value"
 		arg at: 'value' ifPresent: [
-			valueCleaned := ((arg at: 'value') copyWithoutAll: '''') trim.
+			(arg at: 'value') isString ifTrue: [
+				valueCleaned := ((arg at: 'value') copyWithoutAll: '''') trim.
 
 
-			(valueCleaned indexOf: $,) > 0 ifTrue: [
-				valueCleaned := $, split: valueCleaned ].
+				(valueCleaned indexOf: $,) > 0 ifTrue: [
+					valueCleaned := $, split: valueCleaned ].
 
+				arg at: 'value' put: valueCleaned ] ] ].
 
-			arg at: 'value' put: valueCleaned ] ].
 	^ arguments
 ]
 

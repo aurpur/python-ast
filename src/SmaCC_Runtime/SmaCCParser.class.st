@@ -168,11 +168,6 @@ SmaCCParser class >> parse: aString startingAt: anInteger onError: aBlock [
 ]
 
 { #category : #parsing }
-SmaCCParser class >> parseFile: aString [
-	^ self parseFile: aString encoding: self defaultEncoding
-]
-
-{ #category : #parsing }
 SmaCCParser class >> parseFile: aString encoding: encodingString [
 	| contents |
 	contents := self contentsOfFile: aString encoding: encodingString.
@@ -220,6 +215,11 @@ SmaCCParser class >> parseStream: aStream startingAt: anInteger onError: aBlock 
 	^ [ self parseStream: aStream startingAt: anInteger ]
 		on: SmaCCParserError
 		do: (self errorBlock: aBlock)
+]
+
+{ #category : #parsing }
+SmaCCParser class >> parseThenModelingFromFile: aString [
+	^ self parseFile: aString encoding: self defaultEncoding
 ]
 
 { #category : #parsing }

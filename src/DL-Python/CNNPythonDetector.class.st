@@ -7,25 +7,186 @@ Class {
 	#category : #'DL-Python-Detectors'
 }
 
-{ #category : #initialization }
-CNNPythonDetector >> accept: aSource [
+{ #category : #inspecting }
+CNNPythonDetector >> allBiasWithBatchNormalization: aModel [
 
-	visitor accept: (PythonParser parseWithErrors: aSource).
+	| invocations layer candidateName buff position results convs convLayer convPosition batchNorms batchNormLayer batchNormPosition bias convUseBias |
+	invocations := self invocations: aModel.
+	convs := OrderedCollection new.
+	batchNorms := OrderedCollection new.
+	position := 1.
+	results := OrderedCollection new.
 
-	^ visitor model
+
+	invocations do: [ :invocation |
+		layer := self getInvocationLayer: invocation.
+		candidateName := self getInvocationCandidateName: invocation.
+		buff := Dictionary new.
+
+
+		buff at: 'candidat' put: candidateName.
+		buff at: 'layer' put: layer.
+		buff at: 'position' put: position.
+		buff at: 'invocation' put: invocation.
+
+		('*conv*' match: candidateName) ifTrue: [
+			bias := self getInvocationArgumentUseBias: invocation.
+
+			buff at: 'use_bias' put: bias.
+			convs add: buff ].
+
+		('*batchnorm*' match: candidateName) ifTrue: [
+			batchNorms add: buff ].
+
+		position := position + 1 ].
+
+
+	convs do: [ :conv |
+		convLayer := conv at: 'layer'.
+		convPosition := conv at: 'position'.
+		convUseBias := conv at: 'use_bias'.
+
+		batchNorms do: [ :batchNorm |
+			batchNormLayer := batchNorm at: 'layer'.
+			batchNormPosition := batchNorm at: 'position'.
+
+			batchNormLayer = convLayer & (convPosition < batchNormPosition)
+			& (convUseBias = true) ifTrue: [
+				results add: (batchNorm at: 'invocation') ] ] ].
+
+	^ results
 ]
 
-{ #category : #initialization }
-CNNPythonDetector >> allInvocation: aModel [
+{ #category : #inspecting }
+CNNPythonDetector >> allInvocationsWithNonDominatingDownSampling: aModel [
 
-	^ (aModel allWithType: FamixPythonInvocation )asOrderedCollection
+	^ (self downSamplings: aModel) collect: [ :downSampling |
+		  ('*average*' match:
+			   (self getInvocationCandidateName: downSampling)) ifTrue: [
+			  downSampling ] ]
 ]
 
-{ #category : #initialization }
+{ #category : #inspecting }
+CNNPythonDetector >> allNonRepresentativeStatisticsEstimation: aModel [
+
+	| invocations layer poolings dropouts candidateName buff position results poolingLayer poolingPosition dropoutLayer dropoutPosition |
+	invocations := self invocations: aModel.
+	poolings := OrderedCollection new.
+	dropouts := OrderedCollection new.
+	position := 1.
+	results := OrderedCollection new.
+
+
+	invocations do: [ :invocation |
+		layer := self getInvocationLayer: invocation.
+		candidateName := self getInvocationCandidateName: invocation.
+		buff := Dictionary new.
+
+
+		buff at: 'candidat' put: candidateName.
+		buff at: 'layer' put: layer.
+		buff at: 'position' put: position.
+		buff at: 'invocation' put: invocation.
+
+		('*batchnorm*' match: candidateName) ifTrue: [ poolings add: buff ].
+
+		('*dropout*' match: candidateName) ifTrue: [ dropouts add: buff ].
+		position := position + 1 ].
+
+
+	poolings do: [ :pooling |
+		poolingLayer := pooling at: 'layer'.
+		poolingPosition := pooling at: 'position'.
+
+		dropouts do: [ :dropout |
+			dropoutLayer := dropout at: 'layer'.
+			dropoutPosition := dropout at: 'position'.
+
+			dropoutLayer = poolingLayer & (dropoutPosition < poolingPosition)
+				ifTrue: [ results add: (dropout at: 'invocation') ] ] ].
+
+	^ results
+]
+
+{ #category : #inspecting }
+CNNPythonDetector >> allUselessDropout: aModel [
+
+	| invocations layer poolings dropouts candidateName buff position results poolingLayer poolingPosition dropoutLayer dropoutPosition |
+	invocations := self invocations: aModel.
+	poolings := OrderedCollection new.
+	dropouts := OrderedCollection new.
+	position := 1.
+	results := OrderedCollection new.
+
+
+	invocations do: [ :invocation |
+		layer := self getInvocationLayer: invocation.
+		candidateName := self getInvocationCandidateName: invocation.
+		buff := Dictionary new.
+
+
+		buff at: 'candidat' put: candidateName.
+		buff at: 'layer' put: layer.
+		buff at: 'position' put: position.
+		buff at: 'invocation' put: invocation.
+
+		('*pooling*' match: candidateName) ifTrue: [ poolings add: buff ].
+
+		('*dropout*' match: candidateName) ifTrue: [ dropouts add: buff ].
+		position := position + 1 ].
+
+
+	poolings do: [ :pooling |
+		poolingLayer := pooling at: 'layer'.
+		poolingPosition := pooling at: 'position'.
+
+		dropouts do: [ :dropout |
+			dropoutLayer := dropout at: 'layer'.
+			dropoutPosition := dropout at: 'position'.
+
+			dropoutLayer = poolingLayer & (dropoutPosition < poolingPosition)
+				ifTrue: [ results add: (dropout at: 'invocation') ] ] ].
+
+	^ results.
+
+]
+
+{ #category : #'private - accessing' }
+CNNPythonDetector >> convolutions: aModel [
+
+	| candidateName |
+	^ ((self invocations: aModel) collect: [ :invocation |
+		   candidateName := self getInvocationCandidateName: invocation.
+		   ('*conv*' match: candidateName) ifTrue: [ invocation ] ])
+		  reject: [ :a | a isNil ]
+]
+
+{ #category : #'private - accessing' }
+CNNPythonDetector >> convolutionsWithLargekernel: aModel [
+
+	| convolutions results convArgs |
+	convolutions := self convolutions: aModel.
+	results := OrderedCollection new.
+
+	convolutions size > 1 ifTrue: [
+		convolutions do: [ :convolution |
+			convArgs := self getInvocationArguments: convolution.
+
+			(convArgs second at: 'value') isString
+				ifTrue: [
+					(convArgs second at: 'value') asInteger > 3 ifTrue: [
+						results add: convolution ] ]
+				ifFalse: [
+					(convArgs second at: 'value') first asInteger > 3 ifTrue: [
+						results add: convolution ] ] ] ].
+	^ results
+]
+
+{ #category : #'private - accessing' }
 CNNPythonDetector >> downSamplings: aModel [
 
 	| candidateName  |
-	^((self allInvocation: aModel) collect: [ :invocation |
+	^((self invocations: aModel) collect: [ :invocation |
 		           candidateName := self getInvocationCandidateName:
 			                            invocation.
 		           ('*pooling*' match: candidateName) ifTrue: [ invocation ] ] )reject: [ :a | a isNil ].
@@ -33,17 +194,150 @@ CNNPythonDetector >> downSamplings: aModel [
 
 ]
 
-{ #category : #initialization }
+{ #category : #'private - accessing' }
+CNNPythonDetector >> getInvocationArgumentUseBias: invocation [
+
+	| args res |
+	args := invocation cacheAt: 'args' ifAbsent: [ nil ].
+	res := true.
+
+	args do: [ :arg |
+		(arg at: 'label' ifAbsent: [ '' ]) = 'use_bias' ifTrue: [
+			(arg at: 'value') asLowercase = 'true' ifFalse: [ res := false ] ] ].
+	^ res
+]
+
+{ #category : #'private - accessing' }
+CNNPythonDetector >> getInvocationArguments: invocation [
+
+	^ invocation cacheAt: 'args' ifAbsent: [ nil ]
+]
+
+{ #category : #'private - accessing' }
 CNNPythonDetector >> getInvocationCandidateName: invocation [
 
 			  ^ invocation cacheAt: 'canditate' ifAbsent: [ nil ]
 		
 ]
 
-{ #category : #initialization }
+{ #category : #'private - accessing' }
+CNNPythonDetector >> getInvocationLayer: invocation [
+
+	^ invocation cacheAt: 'layer' ifAbsent: [ nil ]
+]
+
+{ #category : #inspecting }
+CNNPythonDetector >> hasBiasWithBatchNormalization: aModel [
+
+	^(self allBiasWithBatchNormalization: aModel) isNotEmpty
+]
+
+{ #category : #inspecting }
+CNNPythonDetector >> hasHeterogeneousBlocks: aModel [
+
+	^ (self homogeneousBlocks: aModel) size < 2
+	  | (self convolutionsWithLargekernel: aModel) isNotEmpty.
+
+]
+
+{ #category : #inspecting }
+CNNPythonDetector >> hasLosingLocalCorrelation: aModel [
+
+	| convs localWindowSize |
+	convs := self convolutions: aModel.
+
+	localWindowSize := convs collect: [ :each |
+		                   (self getInvocationArguments: each) second
+			                   isString
+			                   ifTrue: [
+				                   ((self getInvocationArguments: each) second
+					                    at: 'value')  asInteger ]
+			                   ifFalse: [
+			                   ((self getInvocationArguments: each) second at:
+				                    'value') first asInteger ] ].
+
+	^ (self isAscending: localWindowSize) not
+	  | (self isSame: localWindowSize) not
+]
+
+{ #category : #inspecting }
+CNNPythonDetector >> hasNoNexpandingFeatureMap: aModel [
+
+	| convs nbFeaturesMap |
+	convs := self convolutions: aModel.
+
+	nbFeaturesMap := convs collect: [ :each |
+		                 ((self getInvocationArguments: each) first at:
+			                  'value') asInteger ].
+
+	^ (self isAscending: nbFeaturesMap) not
+]
+
+{ #category : #inspecting }
 CNNPythonDetector >> hasNonDominatingDownSampling: aModel [
 
-	^ (self invocationsWithNonDominatingDownSampling: aModel) isNotEmpty
+	^ (self allInvocationsWithNonDominatingDownSampling: aModel) isNotEmpty
+]
+
+{ #category : #inspecting }
+CNNPythonDetector >> hasNonRepresentativeStatisticsEstimation: aModel [
+
+	^(self allNonRepresentativeStatisticsEstimation: aModel ) isNotEmpty
+]
+
+{ #category : #inspecting }
+CNNPythonDetector >> hasTooMuchDownSampling: aModel [
+
+	| convolutionsNumber downSamplingNumber |
+	convolutionsNumber := (self convolutions: aModel) size.
+	downSamplingNumber := (self downSamplings: aModel) size.
+
+	^ (convolutionsNumber / 3) < downSamplingNumber
+]
+
+{ #category : #inspecting }
+CNNPythonDetector >> hasUselessDropout: aModel [
+
+	^(self allUselessDropout: aModel) isNotEmpty
+]
+
+{ #category : #'private - accessing' }
+CNNPythonDetector >> homogeneousBlocks: aModel [
+
+	| convolutions nextPos results nextConvolution convArgs nextConvArgs isHomogeneous |
+	convolutions := self convolutions: aModel.
+	nextPos := 2.
+	results := OrderedCollection new.
+
+	convolutions size > 1 ifTrue: [ "initialization"
+		convolutions do: [ :convolution |
+			convolution cacheAt: 'isHomogeneous' put: false ].
+
+		"Update homogeneous blocks"
+		convolutions do: [ :convolution |
+			convolutions size >= nextPos ifTrue: [
+				nextConvolution := convolutions at: nextPos.
+
+
+				convArgs := self getInvocationArguments: convolution.
+				nextConvArgs := self getInvocationArguments: nextConvolution.
+
+				convArgs isNotEmpty & nextConvArgs isNotEmpty ifTrue: [
+					convArgs first = nextConvArgs first
+					& (convArgs second = nextConvArgs second) ifTrue: [
+						convolution cacheAt: 'isHomogeneous' put: true.
+						nextConvolution cacheAt: 'isHomogeneous' put: true ] ].
+				nextPos := nextPos + 1 ] ].
+
+		"Collect homogeous blocks"
+		convolutions do: [ :convolution |
+			isHomogeneous := convolution
+				                 cacheAt: 'isHomogeneous'
+				                 ifAbsent: [ false ].
+
+			isHomogeneous ifTrue: [ results add: convolution ] ] ].
+
+	^ results
 ]
 
 { #category : #initialization }
@@ -53,21 +347,60 @@ CNNPythonDetector >> initialize [
 	visitor := MSEPythonToFamixImporterVisitor new.
 ]
 
-{ #category : #initialization }
-CNNPythonDetector >> invocationsWithNonDominatingDownSampling: aModel [
+{ #category : #'private - accessing' }
+CNNPythonDetector >> invocations: aModel [
 
-	^ (self downSamplings: aModel) collect: [ :downSampling |
-		  ('*average*' match:
-			   (self getInvocationCandidateName: downSampling)) ifTrue: [
-			  downSampling ] ]
+	^ (aModel allWithType: FamixPythonInvocation )asOrderedCollection
 ]
 
-{ #category : #initialization }
-CNNPythonDetector >> parseFile: aPath [
+{ #category : #helpers }
+CNNPythonDetector >> isAscending: aCollection [
+
+	| counter len |
+	counter := 2.
+	len := aCollection size.
+
+	aCollection do: [ :each |
+		counter < len ifTrue: [
+			each > (aCollection at: counter) ifTrue: [ ^ false ].
+			counter := counter + 1 ] ].
+
+	^ true
+]
+
+{ #category : #helpers }
+CNNPythonDetector >> isSame: aCollection [
+
+	| counter len |
+	counter := 2.
+	len := aCollection size.
+
+	aCollection do: [ :each |
+		counter < len ifTrue: [
+			(each = (aCollection at: counter)) ifFalse: [ ^ false ].
+			counter := counter + 1 ] ].
+
+	^ true
+]
+
+{ #category : #visiting }
+CNNPythonDetector >> parseThenModelingFromFile: aPath [
 	"Example of path : '/Users/aurelikama/Documents/Projet/These/parserPythonToJson/sample_design_smell/layers_formation/gh_non_dominating_dow_sampling.py'
 		          asFileReference contents."
 
+	^ self parseThenModelingFromString: aPath asFileReference contents
+]
 
+{ #category : #visiting }
+CNNPythonDetector >> parseThenModelingFromString: aSource [
 
-	^ self accept: aPath
+	visitor parseThenModelingFromString: (PythonParser parseWithErrors: aSource).
+
+	^ visitor model
+]
+
+{ #category : #accessing }
+CNNPythonDetector >> visitor [
+
+	^ visitor
 ]
