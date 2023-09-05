@@ -2,7 +2,8 @@ Class {
 	#name : #CNNPythonDetector,
 	#superclass : #Object,
 	#instVars : [
-		'visitor'
+		'visitor',
+		'allLayers'
 	],
 	#category : #'DL-Python-Detectors'
 }
@@ -194,6 +195,32 @@ CNNPythonDetector >> downSamplings: aModel [
 
 ]
 
+{ #category : #nicolas }
+CNNPythonDetector >> findLayersFromInvocations: invocationCollection [
+
+	| currentLayer |
+	currentLayer := nil.
+
+	invocationCollection do: [ :invoc |
+		(self isConvolution: invoc)
+			ifTrue: [
+				currentLayer := CNNPythonLayer new
+					                convolution: invoc;
+					                yourself.
+				allLayers add: currentLayer ]
+			ifFalse: [ currentLayer ifNotNil: [ currentLayer add: invoc ] ] ].
+
+	^ allLayers
+]
+
+{ #category : #nicolas }
+CNNPythonDetector >> findLayersIn: aModel [
+	^self findLayersFromInvocations: ((self invocations: aModel) sorted: [ :a :b |
+		a sourceAnchor startPos < b sourceAnchor startPos
+	])
+
+]
+
 { #category : #'private - accessing' }
 CNNPythonDetector >> getInvocationArgumentUseBias: invocation [
 
@@ -288,34 +315,42 @@ CNNPythonDetector >> hasNonRepresentativeStatisticsEstimation: aModel [
 { #category : #inspecting }
 CNNPythonDetector >> hasTooMuchDownSampling: aModel [
 
-	| convolutionsNumber downSamplingNumber |
-	convolutionsNumber := (self convolutions: aModel) size.
-	downSamplingNumber := (self downSamplings: aModel) size.
+	| layersNumber downSamplingNumber |
+	layersNumber := allLayers size.
+	downSamplingNumber := allLayers count: #hasDownSampling.
 
-	^ (convolutionsNumber / 3) < downSamplingNumber
+	^ layersNumber / 3 < downSamplingNumber
 ]
 
 { #category : #inspecting }
 CNNPythonDetector >> hasUselessDropout: aModel [
+	allLayers ifEmpty: [ self findLayersIn: aModel ].
 
-	^(self allUselessDropout: aModel) isNotEmpty
+	^allLayers anySatisfy: [ :layer | self allUselessDropout: layer ]
 ]
 
 { #category : #'private - accessing' }
 CNNPythonDetector >> homogeneousBlocks: aModel [
 
-	| convolutions nextPos results nextConvolution convArgs nextConvArgs isHomogeneous |
+	| convolutions nextPos results  |
 	convolutions := self convolutions: aModel.
 	nextPos := 2.
 	results := OrderedCollection new.
 
-	convolutions size > 1 ifTrue: [ "initialization"
+"	convolutions size > 1 ifTrue: [ ""initialization""
 		convolutions do: [ :convolution |
-			convolution cacheAt: 'isHomogeneous' put: false ].
+			convolution cacheAt: 'isHomogeneous' put: false ]."
 
 		"Update homogeneous blocks"
-		convolutions do: [ :convolution |
-			convolutions size >= nextPos ifTrue: [
+		convolutions doWithIndex: [ :convolution :i |
+			convolutions doWithIndex: [ :nextConvolution :j |
+				i < j ifTrue: [
+					(convolution isHomogeneousTo: nextConvolution) ifTrue: [
+						convolution addHomogeneous: nextConvolution.
+						nextConvolution homogeneous: convolution ] ] ] ].
+
+
+		"convolutions size >= nextPos ifTrue: [
 				nextConvolution := convolutions at: nextPos.
 
 
@@ -327,17 +362,20 @@ CNNPythonDetector >> homogeneousBlocks: aModel [
 					& (convArgs second = nextConvArgs second) ifTrue: [
 						convolution cacheAt: 'isHomogeneous' put: true.
 						nextConvolution cacheAt: 'isHomogeneous' put: true ] ].
-				nextPos := nextPos + 1 ] ].
+				nextPos := nextPos + 1 ] ]."
 
+
+		^ convolutions collect: #isHomogeneous
+		
 		"Collect homogeous blocks"
-		convolutions do: [ :convolution |
+		"convolutions do: [ :convolution |
 			isHomogeneous := convolution
 				                 cacheAt: 'isHomogeneous'
 				                 ifAbsent: [ false ].
 
-			isHomogeneous ifTrue: [ results add: convolution ] ] ].
+			isHomogeneous ifTrue: [ results add: convolution ] ] ]."
 
-	^ results
+"	^ results"
 ]
 
 { #category : #initialization }
@@ -345,6 +383,8 @@ CNNPythonDetector >> initialize [
 
 	super initialize.
 	visitor := MSEPythonToFamixImporterVisitor new.
+
+	allLayers := OrderedCollection new.
 ]
 
 { #category : #'private - accessing' }
@@ -366,6 +406,11 @@ CNNPythonDetector >> isAscending: aCollection [
 			counter := counter + 1 ] ].
 
 	^ true
+]
+
+{ #category : #nicolas }
+CNNPythonDetector >> isConvolution: anInvocation [
+	^'*conv*' match: (self getInvocationCandidateName: anInvocation)
 ]
 
 { #category : #helpers }
@@ -392,9 +437,9 @@ CNNPythonDetector >> parseThenModelingFromFile: aPath [
 ]
 
 { #category : #visiting }
-CNNPythonDetector >> parseThenModelingFromString: aSource [
+CNNPythonDetector >> parseThenModelingFromString: aString [
 
-	visitor parseThenModelingFromString: (PythonParser parseWithErrors: aSource).
+	visitor accept: (PythonParser parseWithErrors: aString).
 
 	^ visitor model
 ]

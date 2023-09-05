@@ -67,8 +67,8 @@ sftm = Activation(''softmax'')
 
 	self
 		assert:
-			(detector allInvocationsWithNonDominatingDownSampling: model) anyOne
-				class
+			(detector allInvocationsWithNonDominatingDownSampling: model)
+				anyOne class
 		equals: FamixPythonInvocation
 ]
 
@@ -125,11 +125,13 @@ model.add(Conv2D(256, (3, 3), padding=''same''))
 model.add(MaxPooling2D(pool_size=(2, 2), strides=2))
 '.
 
-	dropouts := (detector allUselessDropout: model).
+	dropouts := detector allUselessDropout: model.
 	self assert: dropouts first class equals: FamixPythonInvocation.
-		self assert: dropouts size equals: 2.
+	self assert: dropouts size equals: 2.
 
-	candidateName := dropouts first cacheAt: 'canditate' ifAbsent: [ nil ].
+	candidateName := dropouts first
+		                 cacheAt: 'canditate'
+		                 ifAbsent: [ nil ].
 	self assert: candidateName equals: 'Dropout'
 ]
 
@@ -180,7 +182,9 @@ model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Dropout(0.2))
 '.
 
-	self assert: (detector hasBiasWithBatchNormalization:  model) equals: true
+	self
+		assert: (detector hasBiasWithBatchNormalization: model)
+		equals: true
 ]
 
 { #category : #tests }
@@ -276,7 +280,6 @@ sftm = Activation(''softmax'')
 { #category : #tests }
 CNNPythonDetectorTest >> testHasNonRepresentativeStatisticsEstimation [
 
-
 	model := detector parseThenModelingFromString: '
 model.add(Conv2D(32, (5, 5)))
 model.add(Dropout(0.2))
@@ -292,7 +295,7 @@ model.add(Activation(''relu''))
 '.
 
 	self
-		assert: (detector hasNonRepresentativeStatisticsEstimation:  model)
+		assert: (detector hasNonRepresentativeStatisticsEstimation: model)
 		equals: true
 ]
 

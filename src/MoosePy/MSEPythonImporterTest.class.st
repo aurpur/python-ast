@@ -85,7 +85,7 @@ MSEPythonImporterTest >> sourceBig2 [
 { #category : #'tests - classes' }
 MSEPythonImporterTest >> testClassIsInModel [
 
-	importer parseThenModelingFromString: pyDoc.
+	importer accept: pyDoc.
 	self assert: importer model numberOfClasses equals: 3.
 	self assert: importer model name equals: 'testPythonModelName'
 ]
@@ -93,7 +93,7 @@ MSEPythonImporterTest >> testClassIsInModel [
 { #category : #tests }
 MSEPythonImporterTest >> testClasses [
 
-	importer parseThenModelingFromString: pyDoc.
+	importer accept: pyDoc.
 	self assert: importer classes size equals: 3.
 	self assert: (importer classNamed: 'Ball') isNotNil.
 	self assert: (importer classNamed: 'Player') isNotNil
@@ -102,10 +102,10 @@ MSEPythonImporterTest >> testClasses [
 { #category : #tests }
 MSEPythonImporterTest >> testClassesImportedTwiceAreOnlyImportedOnce [
 
-	importer parseThenModelingFromString: pyDoc.
+	importer accept: pyDoc.
 	self assert: importer classes size equals: 3.
 
-	importer parseThenModelingFromString: pyDoc.
+	importer accept: pyDoc.
 
 	self assert: importer classes size equals: 3
 ]
@@ -121,7 +121,7 @@ MSEPythonImporterTest >> testFileIsOk [
 MSEPythonImporterTest >> testImportClassKnowsItsMethods [
 	
 	| cl | 
-	importer parseThenModelingFromString: pyDoc.
+	importer accept: pyDoc.
 	cl := importer classNamed: 'Player'.
 	self assert: cl methods first name equals: '__init__'.
 	self assert: cl methods first signature equals: 'self, x, y, joystick_no'.
@@ -132,7 +132,7 @@ MSEPythonImporterTest >> testImportClassKnowsItsMethods [
 MSEPythonImporterTest >> testImportFamixClass [
 	
 	| firstClass secondClass | 
-	importer parseThenModelingFromString: pyDoc.
+	importer accept: pyDoc.
 	firstClass := importer classNamed: 'Ball'.
 	self assert: firstClass class equals: FamixPythonClass.
 	self assert: firstClass name equals: 'Ball'.
@@ -146,7 +146,7 @@ MSEPythonImporterTest >> testImportFamixClass [
 MSEPythonImporterTest >> testImportFamixFunction [
 	
 	| func | 
-	importer parseThenModelingFromString: pyDoc2.
+	importer accept: pyDoc2.
 	func := importer functionNamed: 'tryToPlaceWord'.
 	self assert: func class equals: FamixPythonFunction.
 	self assert: func signature equals: 'grid, word'
@@ -157,7 +157,7 @@ MSEPythonImporterTest >> testImportFamixFunction [
 MSEPythonImporterTest >> testImportFamixFunctionKnowsItsModule [
 
 	| func module |
-	importer parseThenModelingFromString: pyDoc2.
+	importer accept: pyDoc2.
 	func := importer functionNamed: 'tryToPlaceWord'.
 	module := importer moduleNamed: 'sprite_collect_blocks_2'.
 	self assert: func functionOwner equals: module.
@@ -168,7 +168,7 @@ MSEPythonImporterTest >> testImportFamixFunctionKnowsItsModule [
 MSEPythonImporterTest >> testImportFamixFunctionWithParameter [
 
 	| param func |
-	importer parseThenModelingFromString: pyDoc2.
+	importer accept: pyDoc2.
 
 	param := importer parameterNamed: 'word' inFunction: 'tryToPlaceWord'.
 	func := param parentBehaviouralEntity.
@@ -183,7 +183,7 @@ MSEPythonImporterTest >> testImportFamixFunctionWithParameter [
 MSEPythonImporterTest >> testImportFamixMethod [
 
 	| mth |
-	importer parseThenModelingFromString: pyDoc.
+	importer accept: pyDoc.
 	mth := importer methodNamed: '__init__' inClass: 'Player'.
 	self assert: mth class equals: FamixPythonMethod.
 	self assert: mth name equals: '__init__'.
@@ -194,7 +194,7 @@ MSEPythonImporterTest >> testImportFamixMethod [
 MSEPythonImporterTest >> testImportFamixMethodKnowsItsClass [
 
 	| mth cl |
-	importer parseThenModelingFromString: pyDoc.
+	importer accept: pyDoc.
 	mth := importer methodNamed: '__init__' inClass: 'Player'.
 	cl := importer classNamed: 'Player'.
 	self assert: mth parentType equals: cl.
@@ -205,7 +205,7 @@ MSEPythonImporterTest >> testImportFamixMethodKnowsItsClass [
 MSEPythonImporterTest >> testImportFamixMethodWithParameter [
 
 	| param  mth |
-	importer parseThenModelingFromString: pyDoc.
+	importer accept: pyDoc.
 
 	param := importer
 		         parameterNamed: 'y'
@@ -225,12 +225,12 @@ MSEPythonImporterTest >> testImportFamixMethodWithParameter [
 MSEPythonImporterTest >> testImportFamixParameter [
 
 	| param |
-	importer parseThenModelingFromString: pyDoc.
+	importer accept: pyDoc.
 	param := importer parameterNamed: 'joystick_no' inMethod: '__init__' inClass: 'Player'.
 	self assert: param class equals: FamixPythonParameter.
 	self assert: param name equals: 'joystick_no'.
 	
-	importer parseThenModelingFromString: pyDoc2.
+	importer accept: pyDoc2.
 	param := importer parameterNamed: 'word' inFunction: 'tryToPlaceWord'.
 	self assert: param class equals: FamixPythonParameter.
 	self assert: param name equals: 'word'.
@@ -239,7 +239,7 @@ MSEPythonImporterTest >> testImportFamixParameter [
 { #category : #tests }
 MSEPythonImporterTest >> testImportFunctions [
 
-	importer parseThenModelingFromString: pyDoc2.
+	importer accept: pyDoc2.
 	self assert: importer functions size equals: 4.
 
 	self assert: (importer functionNamed: 'tryToPlaceWord') isNotNil.
@@ -249,7 +249,7 @@ MSEPythonImporterTest >> testImportFunctions [
 { #category : #'tests - module' }
 MSEPythonImporterTest >> testImportImport [
 
-	importer parseThenModelingFromString: (self parseCode: '
+	importer accept: (self parseCode: '
 import pygame
 import random
 ').
@@ -261,7 +261,7 @@ import random
 { #category : #'tests - module' }
 MSEPythonImporterTest >> testImportImportClassFromModule [
 
-	importer parseThenModelingFromString: (self parseCode: '
+	importer accept: (self parseCode: '
 from keras.layers import Input
 ').
 
@@ -274,7 +274,7 @@ from keras.layers import Input
 { #category : #'tests - module' }
 MSEPythonImporterTest >> testImportImportFunction [
 
-	importer parseThenModelingFromString: (self parseCode: '
+	importer accept: (self parseCode: '
 import matplotlib.pyplot
 ').
 
@@ -284,7 +284,7 @@ import matplotlib.pyplot
 { #category : #'tests - module' }
 MSEPythonImporterTest >> testImportImportFunctionFromModule [
 
-	importer parseThenModelingFromString: (self parseCode: '
+	importer accept: (self parseCode: '
 from random import randint
 ').
 
@@ -297,7 +297,7 @@ from random import randint
 { #category : #'tests - module' }
 MSEPythonImporterTest >> testImportImportModuleWithAlias [
 
-	importer parseThenModelingFromString: (self parseCode: '
+	importer accept: (self parseCode: '
 import math as m
 import matplotlib.pyplot as plt
 ').
@@ -316,7 +316,7 @@ import matplotlib.pyplot as plt
 { #category : #'tests - module' }
 MSEPythonImporterTest >> testImportImportMultiClassesFromModule [
 
-	importer parseThenModelingFromString: (self parseCode: '
+	importer accept: (self parseCode: '
 from keras.layers import Flatten, Activation, AveragePooling2D, BatchNormalization
 ').
 
@@ -330,7 +330,7 @@ from keras.layers import Flatten, Activation, AveragePooling2D, BatchNormalizati
 { #category : #'tests - module' }
 MSEPythonImporterTest >> testImportImportMultiFunctionsFromModule [
 
-	importer parseThenModelingFromString: (self parseCode: '
+	importer accept: (self parseCode: '
 from maths import add, subtract
 ').
 
@@ -345,9 +345,10 @@ from maths import add, subtract
 MSEPythonImporterTest >> testImportInvocation [
 
 	| invocations invocation |
-	importer parseThenModelingFromString: (self parseCode: '
+	importer accept: (self parseCode: '
 grid[row].append(".")
 ').
+
 
 	invocations := importer model allWithType: FamixPythonInvocation.
 	self assert: invocations size equals: 1.
@@ -355,13 +356,13 @@ grid[row].append(".")
 	invocation := importer invocationCandidate: 'append'.
 	self assert: invocation isNotNil.
 	self assert: (importer invocationReceiver: 'grid[row]') isNotNil.
-	self assert: invocation signature equals: '.' 
+	self assert: invocation signature equals: '.'
 ]
 
 { #category : #'tests - module' }
 MSEPythonImporterTest >> testImportInvocationInLoop [
 
-	importer parseThenModelingFromString: (self parseCode: '
+	importer accept: (self parseCode: '
 append(".")
 ').
 	self assert: importer invocations size equals: 1.
@@ -371,7 +372,7 @@ append(".")
 { #category : #'tests - module' }
 MSEPythonImporterTest >> testImportInvocationInNestedLoop [
 
-	importer parseThenModelingFromString: (self parseCode: '
+	importer accept: (self parseCode: '
 for row in array:
 	test()
 	for column in array:
@@ -384,7 +385,7 @@ for row in array:
 { #category : #'tests - module' }
 MSEPythonImporterTest >> testImportInvocationWithArrayReceiver [
 
-	importer parseThenModelingFromString: (self parseCode: '
+	importer accept: (self parseCode: '
 for row in array:
 	grid[row].append(".")
 ').
@@ -395,7 +396,7 @@ for row in array:
 { #category : #'tests - module' }
 MSEPythonImporterTest >> testImportInvocationWithNumericalArguments [
 
-	importer parseThenModelingFromString: (self parseCode: '
+	importer accept: (self parseCode: '
 test(4, 25)
 ').
 	self assert: importer invocations size equals: 1.
@@ -411,7 +412,7 @@ test(4, 25)
 { #category : #'tests - module' }
 MSEPythonImporterTest >> testImportInvocationWithReceiver [
 
-	importer parseThenModelingFromString: (self parseCode: '
+	importer accept: (self parseCode: '
 grid.append(test)
 ').
 	self assert: importer invocations size equals: 1.
@@ -421,7 +422,7 @@ grid.append(test)
 { #category : #'tests - module' }
 MSEPythonImporterTest >> testImportInvocationWithStringReceiver [
 
-	importer parseThenModelingFromString: (self parseCode: '
+	importer accept: (self parseCode: '
 "CNN_Model_Rebuilt/logs/{}".format(NAME)
 ').
 	self assert: importer invocations size equals: 1.
@@ -432,7 +433,7 @@ MSEPythonImporterTest >> testImportInvocationWithStringReceiver [
 MSEPythonImporterTest >> testImportInvocationWithVariableArguments [
 
 	| invocation |
-	importer parseThenModelingFromString: (self parseCode: '
+	importer accept: (self parseCode: '
 test(x, 25) 
 ').
 	self assert: importer invocations size equals: 1.
@@ -457,7 +458,7 @@ test(x, 25)
 { #category : #'tests - module' }
 MSEPythonImporterTest >> testImportIsModel [
 	
-	importer parseThenModelingFromString: pyDoc.
+	importer accept: pyDoc.
 	importer model entityNamed: 'pygame'.
 	"Yes mom this is smoke test"
 	
@@ -467,7 +468,7 @@ MSEPythonImporterTest >> testImportIsModel [
 MSEPythonImporterTest >> testImportKnowsItsModule [
 	
 	| import module | 
-	importer parseThenModelingFromString: pyDoc.
+	importer accept: pyDoc.
 	import := importer importNamed: 'pygame'.
 	module := importer moduleNamed: self moduleName.
 	self assert: import manualImportingEntity equals: module.
@@ -477,7 +478,7 @@ MSEPythonImporterTest >> testImportKnowsItsModule [
 { #category : #tests }
 MSEPythonImporterTest >> testImportMethods [
 
-	importer parseThenModelingFromString: pyDoc.
+	importer accept: pyDoc.
 	self assert: importer methods size equals: 5.
 	self assert:
 		(importer methodNamed: 'update' inClass: 'Ball') isNotNil.
@@ -492,7 +493,7 @@ MSEPythonImporterTest >> testImportMethods [
 MSEPythonImporterTest >> testImportModule [
 	
 	| module | 
-	importer parseThenModelingFromString: pyDoc.
+	importer accept: pyDoc.
 	module := importer moduleNamed: self moduleName.
 	self assert: module class equals: FamixPythonModule.
 	self assert: module name equals: self moduleName.
@@ -501,14 +502,14 @@ MSEPythonImporterTest >> testImportModule [
 
 { #category : #'tests - classes' }
 MSEPythonImporterTest >> testMethodIsInModel [
-	importer parseThenModelingFromString: pyDoc.
+	importer accept: pyDoc.
 	self assert: importer model numberOfMethods equals: 5.
 ]
 
 { #category : #'tests - module' }
 MSEPythonImporterTest >> testModuleIsModel [
 	
-	importer parseThenModelingFromString: pyDoc.
+	importer accept: pyDoc.
 	importer model entityNamed: 'Main Module'.
 	
 ]
@@ -517,7 +518,7 @@ MSEPythonImporterTest >> testModuleIsModel [
 MSEPythonImporterTest >> testModuleKnowsItsImport [
 	
 	| module | 
-	importer parseThenModelingFromString: pyDoc.
+	importer accept: pyDoc.
 	module := importer moduleNamed: self moduleName.
 	self assert: module manualIncomingImports size equals: 2.
 	"does not work probably because of the bidirectional slots 
@@ -538,7 +539,7 @@ MSEPythonImporterTest >> testParseWithFile [
 MSEPythonImporterTest >> testTwoSiblingImportsHaveTheSameModule [
 	
 	| import module import2 | 
-	importer parseThenModelingFromString: pyDoc.
+	importer accept: pyDoc.
 	import := importer importNamed: 'pygame'.
 	import2 := importer importNamed: 'random'.
 	module := importer moduleNamed: self moduleName.
