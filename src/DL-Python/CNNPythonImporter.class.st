@@ -13,21 +13,46 @@ Class {
 	#category : #'DL-Python-Importers'
 }
 
+{ #category : #helper }
+CNNPythonImporter >> addSourceAnchor: aLayer [
+
+	| sortedLayerInvocations |
+	sortedLayerInvocations := self sortedBySourceAnchor:
+		                          aLayer invocations.
+
+
+	aLayer sourceAnchor: (CNNFamixIndexedFileAnchor new
+			 startPos: sortedLayerInvocations first sourceAnchor startPos;
+			 endPos: sortedLayerInvocations last sourceAnchor endPos;
+			 yourself).
+
+]
+
 { #category : #model }
 CNNPythonImporter >> createCNNModel: aFamixModel [
-	program name: aFamixModel name.
-	^ (self createLayers: (self invocations: aFamixModel)) model
+
+	program name: (self moduleName: aFamixModel).
+
+	 self createLayers: (self invocations: aFamixModel)
 ]
 
 { #category : #'entity creation' }
 CNNPythonImporter >> createLayer: invocation [
 
-	| aLayer |
+	| aLayer conv args |
 	aLayer := model newLayer.
 
 	(self isConvolution: invocation)
 		ifTrue: [
-		aLayer convolution: (model newConvolution invocation: invocation) ]
+			conv := model newConvolution.
+			args := self getArguments: invocation.
+			aLayer convolution: (conv invocation: invocation).
+			conv useBias: (self getInvocationArgumentUseBias: invocation).
+
+			args ifNotNil: [
+				conv filters: (self getArgumentValue: args first).
+				conv kernelSize: (self getArgumentValue: args second) ].
+			 ]
 		ifFalse: [
 			(self isDense: invocation)
 				ifTrue: [ aLayer dense: (model newDense invocation: invocation) ]
@@ -37,7 +62,8 @@ CNNPythonImporter >> createLayer: invocation [
 						aLayer flatten: (model newFlatten invocation: invocation) ]
 						ifFalse: [ ^ nil ] ] ].
 	aLayer name: 'L' , layerNum asString.
-	layerNum := layerNum +1.
+	layerNum := layerNum + 1.
+	aLayer addInvocation: invocation.
 	^ aLayer
 ]
 
@@ -58,7 +84,10 @@ CNNPythonImporter >> createLayers: invocationCollection [
 			self extractSpecificFunctionFrom: invoc to: currentLayer ].
 
 		(self isSequential: invoc) ifTrue: [ type := 'Sequential' ].
-		program type: type ]
+		program type: type ].
+
+
+	self layers do: [ :aLayer | self addSourceAnchor: aLayer ]
 ]
 
 { #category : #'entity creation' }
@@ -68,26 +97,73 @@ CNNPythonImporter >> extractSpecificFunctionFrom: anInvocation to: aCurrentLayer
 		(self isActivation: anInvocation)
 			ifTrue: [
 				aCurrentLayer addActivation:
-					(model newActivation invocation: anInvocation) ]
+					(model newActivation invocation: anInvocation).
+					aCurrentLayer addInvocation: anInvocation ]
 			ifFalse: [
 				(self isPooling: anInvocation)
 					ifTrue: [
 						aCurrentLayer addPooling:
-							(model newPooling invocation: anInvocation) ]
+							(model newPooling invocation: anInvocation).
+						aCurrentLayer addInvocation: anInvocation ]
 					ifFalse: [
-						(self isRegularization: anInvocation)
-							ifTrue: [
-								aCurrentLayer addRegularization:
-									(model newRegularization invocation: anInvocation) ]
-							ifFalse: [
-								aCurrentLayer addInvocation:
-									 anInvocation] ] ] ]
+						(self isRegularization: anInvocation) ifTrue: [
+							aCurrentLayer addRegularization:
+								(model newRegularization invocation: anInvocation).
+							aCurrentLayer addInvocation: anInvocation ] ] ] ]
+]
+
+{ #category : #helper }
+CNNPythonImporter >> getArgument: arguments byLabel: aLabel [
+
+	^ arguments
+		detect: [ :argument | (self getArgumentLabel: argument) = aLabel ]
+		ifFound: [ :argument | argument ]
+		ifNone: [ nil ]
+]
+
+{ #category : #'entity creation' }
+CNNPythonImporter >> getArgumentBooleanValue: anInvocation byLabel: aLabel withDefaultValue: aDefaultValue [
+
+
+
+	(self getArgument: (self getArguments: anInvocation) byLabel: aLabel)
+		ifNotNil: [ :arg |
+		^ self stringToBoolean: (self getArgumentValue: arg) ].
+	^ aDefaultValue
+]
+
+{ #category : #helper }
+CNNPythonImporter >> getArgumentLabel: anArgument [
+
+	^anArgument at: 'label' ifAbsent: [ '' ]
+]
+
+{ #category : #helper }
+CNNPythonImporter >> getArgumentValue: anArgument [
+
+	^ anArgument at: 'value' ifAbsent: [ '' ]
+]
+
+{ #category : #helper }
+CNNPythonImporter >> getArguments: anInvocation [
+
+	^ anInvocation cacheAt: 'args' ifAbsent: [ nil ]
 ]
 
 { #category : #helper }
 CNNPythonImporter >> getCandidateName: anInvocation [
 
 	^ anInvocation cacheAt: 'canditate' ifAbsent: [ nil ]
+]
+
+{ #category : #'entity creation' }
+CNNPythonImporter >> getInvocationArgumentUseBias: anInvocation [
+
+
+	^ self
+		getArgumentBooleanValue: anInvocation
+		byLabel: 'use_bias'
+		withDefaultValue: true.
 ]
 
 { #category : #initialization }
@@ -210,10 +286,28 @@ CNNPythonImporter >> isSequential: anInvocation [
 ]
 
 { #category : #'accessing - classes' }
-CNNPythonImporter >> layers: aModel [
+CNNPythonImporter >> layers [
 
-	^ self sortedBySourceAnchor:
-		  (self model allWithType: CNNFamixLayer) asOrderedCollection
+	^ ( model allWithType: CNNFamixLayer) asOrderedCollection
+]
+
+{ #category : #'accessing - classes' }
+CNNPythonImporter >> model [
+
+	^ model
+]
+
+{ #category : #'accessing - classes' }
+CNNPythonImporter >> moduleName: aModel [
+
+	^
+		  (aModel allWithType: FamixPythonModule) first name
+]
+
+{ #category : #'accessing - classes' }
+CNNPythonImporter >> program [
+
+	^ program
 ]
 
 { #category : #helper }
@@ -222,4 +316,14 @@ CNNPythonImporter >> sortedBySourceAnchor: aCollection [
 	^ aCollection
 		  sorted: [ :a :b |
 		  a sourceAnchor startPos < b sourceAnchor startPos ]
+]
+
+{ #category : #'entity creation' }
+CNNPythonImporter >> stringToBoolean: aString [
+
+				aString asLowercase = 'true'
+				ifTrue: [ ^true ] .
+				aString asLowercase = 'false'
+				ifTrue: [ ^false ] .
+
 ]

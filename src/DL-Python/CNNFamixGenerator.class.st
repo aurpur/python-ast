@@ -61,8 +61,9 @@ CNNFamixGenerator >> defineHierarchy [
 	indexedFileAnchor --|> sourceAnchor.
 	indexedFileAnchor --|> #TIndexedFileNavigation.
 
-	program --|> namedEntity.
+	layer --|> #TSourceEntity.
 
+	program --|> namedEntity
 ]
 
 { #category : #definition }
@@ -72,7 +73,16 @@ CNNFamixGenerator >> defineProperties [
 	(program property: #type type: #String) comment:
 		'Sequential or Fonctional model'.
 
-	(layer property: #name type: #String) comment: 'layer name >> L1'
+	(layer property: #name type: #String) comment: 'layer name >> L1'.
+
+	(convolution property: #useBias type: #Boolean) comment:
+		'layer convolution  useBias >> [true|false]'.
+
+	(convolution property: #filters type: #String defaultValue:true ) comment:
+		'layer convolution  filters >> 32'.
+
+	(convolution property: #kernelSize type: #String) comment:
+		'layer convolution  kernelSize >> 3'
 ]
 
 { #category : #definition }

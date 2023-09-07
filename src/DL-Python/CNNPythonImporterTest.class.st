@@ -4,7 +4,7 @@ Class {
 	#instVars : [
 		'model',
 		'detector',
-		'cnnVisitor'
+		'cnnImporter'
 	],
 	#category : #'DL-Python-Tests'
 }
@@ -22,7 +22,7 @@ CNNPythonImporterTest >> createFamixModel: pythonCode [
 { #category : #running }
 CNNPythonImporterTest >> setUp [
 
-	cnnVisitor := CNNPythonImporter new.
+	cnnImporter := CNNPythonImporter new
 ]
 
 { #category : #tests }
@@ -34,9 +34,9 @@ model.add(Conv2D(32, (5, 5)))
 model.add(Activation(''relu''))
 '.
 
-	cnnModel := cnnVisitor createCNNModel: famixModel.
+	cnnModel := cnnImporter createCNNModel: famixModel.
 
-	layers := cnnModel allWithType: CNNFamixLayer.
+	layers := cnnModel layers.
 
 	self assert: layers first activations size equals: 1.
 
@@ -59,15 +59,15 @@ bn2 = BatchNormalization()
 relu6 = Activation(''relu'')
 '.
 
-	cnnModel := cnnVisitor createCNNModel: famixModel.
+	cnnModel := cnnImporter createCNNModel: famixModel.
 
-	layers := cnnModel allWithType: CNNFamixLayer.
+	layers := cnnModel layers.
 
 	self assert: layers first regularizations size equals: 1.
 
 	self
-		assert:
-		(cnnVisitor isBatchnorm:  layers first regularizations first invocation)
+		assert: (cnnImporter isBatchnorm:
+				 layers first regularizations first invocation)
 		equals: true
 ]
 
@@ -80,9 +80,9 @@ model.add(Conv2D(32, (5, 5)))
 model.add(Activation(''relu''))
 '.
 
-	cnnModel := cnnVisitor createCNNModel: famixModel.
+	cnnModel := cnnImporter createCNNModel: famixModel.
 
-	layers := cnnModel allWithType: CNNFamixLayer.
+	layers := cnnModel layers.
 	self
 		assert: layers first convolution class
 		equals: CNNFamixConvolution.
@@ -101,16 +101,17 @@ model.add(Activation(''relu''))
 model.add(Dropout(0.2))
 '.
 
-	cnnModel := cnnVisitor createCNNModel: famixModel.
+	cnnModel := cnnImporter createCNNModel: famixModel.
 
-	layers := cnnModel allWithType: CNNFamixLayer.
+	layers := cnnModel layers.
 
 	self assert: layers first regularizations size equals: 1.
 
 	self
 		assert:
-		(cnnVisitor isDropout: layers first regularizations first invocation)
-		equals: true.
+		(cnnImporter isDropout:
+			 layers first regularizations first invocation)
+		equals: true
 ]
 
 { #category : #tests }
@@ -123,9 +124,9 @@ model.add(Activation(''relu''))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 '.
 
-	cnnModel := cnnVisitor createCNNModel: famixModel.
+	cnnModel := cnnImporter createCNNModel: famixModel.
 
-	layers := cnnModel allWithType: CNNFamixLayer.
+	layers := cnnModel layers.
 
 	self assert: layers first poolings size equals: 1.
 
@@ -147,9 +148,9 @@ model.add(Activation(''relu''))
 model.add(Dropout(0.2))
 '.
 
-	cnnModel := cnnVisitor createCNNModel: famixModel.
+	cnnModel := cnnImporter createCNNModel: famixModel.
 
-	layers := cnnModel allWithType: CNNFamixLayer.
+	layers := cnnModel layers.
 
 	self assert: layers first regularizations size equals: 1.
 
@@ -180,20 +181,19 @@ model.add(Conv2D(32, (3, 3)))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 '.
 
-	cnnModel := cnnVisitor createCNNModel: famixModel.
+	cnnModel := cnnImporter createCNNModel: famixModel.
 
-	self assert: (cnnModel allWithType: CNNFamixLayer) size equals: 4.
+	self assert: (cnnModel layers) size equals: 4.
 
 	self
-		assert: (cnnModel allWithType: CNNFamixLayer) first name
-		equals: 'L1'.
-		
+		assert: (cnnModel layers) first name
+		equals: 'L1'
 ]
 
 { #category : #tests }
 CNNPythonImporterTest >> testProgram [
 
-	| famixModel cnnModel programs |
+	| famixModel cnnModel  |
 	famixModel := self createFamixModel: '
 model = Sequential()
 	
@@ -211,13 +211,12 @@ model.add(Conv2D(32, (3, 3)))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 '.
 
-	cnnModel := cnnVisitor createCNNModel: famixModel.
+	cnnModel := cnnImporter createCNNModel: famixModel.
 
-	programs := cnnModel allWithType: CNNFamixProgram.
 
-	self assert: programs size equals: 1.
+	self assert: cnnModel program class equals: CNNFamixProgram.
 
-	self assert: programs first name equals: 'default Python Model'.
+	self assert: cnnModel program name equals: 'Main Module'.
 
-	self assert: programs first type equals: 'Sequential'
+	self assert: cnnModel program  type equals: 'Sequential'
 ]
