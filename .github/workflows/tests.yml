@@ -7,10 +7,10 @@ name: CI DL Python
 on:
   push:
     branches:
-      - dev
+      - develop
       - master
   pull_request:
-    branches: [development, master]
+    branches: [develop, master]
   pull_request_review:
     types: [submitted]
   workflow_dispatch:
