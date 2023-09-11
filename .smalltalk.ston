@@ -6,6 +6,7 @@ SmalltalkCISpec {
       #onUpgrade : #useIncoming,
       #ignoreImage : true,
       #directory : 'src',
+      #load : [ 'default' ],
       #platforms : [ #pharo ]
     }
   ]
