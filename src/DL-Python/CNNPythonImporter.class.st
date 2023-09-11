@@ -39,7 +39,7 @@ CNNPythonImporter >> createCNNModel: aFamixModel [
 { #category : #'entity creation' }
 CNNPythonImporter >> createLayer: invocation [
 
-	| aLayer conv args |
+	| aLayer conv args ks |
 	aLayer := model newLayer.
 
 	(self isConvolution: invocation)
@@ -51,8 +51,12 @@ CNNPythonImporter >> createLayer: invocation [
 
 			args ifNotNil: [
 				conv filters: (self getArgumentValue: args first).
-				conv kernelSize: (self getArgumentValue: args second) ].
-			 ]
+
+				ks := self getArgumentValue: args second.
+
+				ks isString
+					ifFalse: [ conv kernelSize: ks first ]
+					ifTrue: [ conv kernelSize: ks ] ] ]
 		ifFalse: [
 			(self isDense: invocation)
 				ifTrue: [ aLayer dense: (model newDense invocation: invocation) ]

@@ -140,8 +140,8 @@ model.add(MaxPooling2D(pool_size=(2, 2)))
 { #category : #tests }
 CNNPythonDetectorTest >> testHasLosingLocalCorrelation [
 
-	| famixModel |
-	famixModel := self createFamixModel:'
+	| famixModel cnnModel |
+	famixModel := self createFamixModel: '
 model.add(Conv2D(256, (7, 7), input_shape=X.shape[1:], padding=''same''))
 model.add(Activation(''relu''))
 model.add(MaxPooling2D(pool_size=(2, 2), strides=2))
@@ -160,13 +160,20 @@ model.add(MaxPooling2D(pool_size=(2, 2), strides=2))
 model.add(Conv2D(256, (3, 3), padding=''same''))
 '.
 
-	self assert: (detector hasLosingLocalCorrelation: model) equals: true
+
+
+	cnnModel := self createCNNModel: famixModel.
+
+
+	self
+		assert: (designSmellDetector hasLosingLocalCorrelation: cnnModel)
+		equals: true
 ]
 
 { #category : #tests }
 CNNPythonDetectorTest >> testHasNoNexpandingFeatureMap [
 
-	| famixModel |
+	| famixModel cnnModel |
 	famixModel := self createFamixModel: '
 model.add(Conv2D(256, (3, 3), input_shape=X.shape[1:], padding=''same''))
 model.add(Activation(''relu''))
@@ -186,7 +193,13 @@ model.add(MaxPooling2D(pool_size=(2, 2), strides=2))
 model.add(Conv2D(256, (3, 3), padding=''same''))
 '.
 
-	self assert: (detector hasNoNexpandingFeatureMap: model) equals: true
+	cnnModel := self createCNNModel: famixModel.
+
+
+	self
+		assert: (designSmellDetector hasNoNexpandingFeatureMap: cnnModel)
+		equals: true
+		
 ]
 
 { #category : #tests }
@@ -240,7 +253,7 @@ model.add(Activation(''relu''))
 { #category : #tests }
 CNNPythonDetectorTest >> testHasTooMuchDownSampling [
 
-	| famixModel |
+	| famixModel cnnModel |
 	famixModel := self createFamixModel: '
 model.add(Conv2D(256, (3, 3), input_shape=X.shape[1:], padding=''same''))
 model.add(Activation(''relu''))
@@ -262,7 +275,13 @@ model.add(MaxPooling2D(pool_size=(2, 2), strides=2))
 
 '.
 
-	self assert: (detector hasTooMuchDownSampling: model) equals: true
+	cnnModel := self createCNNModel: famixModel.
+
+
+
+	self
+		assert: (designSmellDetector hasTooMuchDownSampling: cnnModel)
+		equals: true
 ]
 
 { #category : #tests }

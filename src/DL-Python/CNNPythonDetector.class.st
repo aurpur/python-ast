@@ -52,68 +52,11 @@ CNNPythonDetector >> doesLayerContainPooling: aLayer [
 	^ ( aLayer poolings) isNotEmpty
 ]
 
-{ #category : #'private - accessing' }
-CNNPythonDetector >> downSamplings: aModel [
-
-	| candidateName  |
-	^((self invocations: aModel) collect: [ :invocation |
-		           candidateName := self getInvocationCandidateName:
-			                            invocation.
-		           ('*pooling*' match: candidateName) ifTrue: [ invocation ] ] )reject: [ :a | a isNil ].
-
-
-]
-
 { #category : #inspecting }
 CNNPythonDetector >> dropoutsInLayer: aLayer [
 
 	^ (aLayer regularizations select: [ :regularization |
 		   self isDropout: regularization ])
-]
-
-{ #category : #nicolas }
-CNNPythonDetector >> findLayersFromInvocations: invocationCollection [
-
-	| currentLayer |
-	currentLayer := nil.
-
-	invocationCollection do: [ :invoc |
-		(self isConvolution: invoc)
-			ifTrue: [
-				currentLayer := CNNPythonLayer new
-					                convolution: invoc;
-					                yourself.
-				allLayers add: currentLayer ]
-			ifFalse: [ currentLayer ifNotNil: [ currentLayer add: invoc ] ] ].
-
-	^ allLayers
-]
-
-{ #category : #nicolas }
-CNNPythonDetector >> findLayersIn: aModel [
-	^self findLayersFromInvocations: ((self invocations: aModel) sorted: [ :a :b |
-		a sourceAnchor startPos < b sourceAnchor startPos
-	])
-
-]
-
-{ #category : #'private - accessing' }
-CNNPythonDetector >> getInvocationArguments: invocation [
-
-	^ invocation cacheAt: 'args' ifAbsent: [ nil ]
-]
-
-{ #category : #'private - accessing' }
-CNNPythonDetector >> getInvocationCandidateName: invocation [
-
-			  ^ invocation cacheAt: 'canditate' ifAbsent: [ nil ]
-		
-]
-
-{ #category : #'private - accessing' }
-CNNPythonDetector >> getInvocationLayer: invocation [
-
-	^ invocation cacheAt: 'layer' ifAbsent: [ nil ]
 ]
 
 { #category : #inspecting }
@@ -141,32 +84,21 @@ CNNPythonDetector >> hasLargeKernelConvolution: aModel [
 { #category : #inspecting }
 CNNPythonDetector >> hasLosingLocalCorrelation: aModel [
 
-	| convs localWindowSize |
-	convs := self convolutions: aModel.
+	| localsWindowSize |
+	localsWindowSize := aModel layers collect: [ :layer |
+		                    layer convolution kernelSize asInteger ].
 
-	localWindowSize := convs collect: [ :each |
-		                   (self getInvocationArguments: each) second
-			                   isString
-			                   ifTrue: [
-				                   ((self getInvocationArguments: each) second
-					                    at: 'value')  asInteger ]
-			                   ifFalse: [
-			                   ((self getInvocationArguments: each) second at:
-				                    'value') first asInteger ] ].
 
-	^ (self isAscending: localWindowSize) not
-	  | (self isSame: localWindowSize) not
+	^ self isDescending: localsWindowSize
 ]
 
 { #category : #inspecting }
 CNNPythonDetector >> hasNoNexpandingFeatureMap: aModel [
 
-	| convs nbFeaturesMap |
-	convs := self convolutions: aModel.
+	| nbFeaturesMap |
+	nbFeaturesMap := aModel layers collect: [ :layer |
+		                 layer convolution filters asInteger ].
 
-	nbFeaturesMap := convs collect: [ :each |
-		                 ((self getInvocationArguments: each) first at:
-			                  'value') asInteger ].
 
 	^ (self isAscending: nbFeaturesMap) not
 ]
@@ -188,8 +120,11 @@ CNNPythonDetector >> hasNonRepresentativeStatisticsEstimation: aModel [
 CNNPythonDetector >> hasTooMuchDownSampling: aModel [
 
 	| layersNumber downSamplingNumber |
-	layersNumber := allLayers size.
-	downSamplingNumber := allLayers count: #hasDownSampling.
+	layersNumber := aModel layers size.
+
+
+	downSamplingNumber := aModel layers count: #hasDownSampling.
+
 
 	^ layersNumber / 3 < downSamplingNumber
 ]
@@ -232,9 +167,7 @@ CNNPythonDetector >> homogeneousBlocks: aModel [
 CNNPythonDetector >> initialize [
 
 	super initialize.
-	importerCNN := CNNPythonImporter  new.
-
-	allLayers := OrderedCollection new
+	importerCNN := CNNPythonImporter new
 ]
 
 { #category : #'private - accessing' }
@@ -243,58 +176,65 @@ CNNPythonDetector >> invocations: aModel [
 	^ (aModel allWithType: FamixPythonInvocation )asOrderedCollection
 ]
 
-{ #category : #helpers }
+{ #category : #helper }
 CNNPythonDetector >> isAscending: aCollection [
 
-	| counter len |
+	| counter len next res |
 	counter := 2.
 	len := aCollection size.
+	res := true.
 
-	aCollection do: [ :each |
+	(self isSame: aCollection) ifTrue: [ ^ res not ].
+
+	aCollection do: [ :current |
 		counter < len ifTrue: [
-			each > (aCollection at: counter) ifTrue: [ ^ false ].
+			next := aCollection at: counter.
+			current > next ifTrue: [ ^ res not ].
 			counter := counter + 1 ] ].
 
-	^ true
+	^ res
 ]
 
-{ #category : #inspecting }
+{ #category : #helper }
 CNNPythonDetector >> isAveragePooling: aPooling [
 
 	^ importerCNN isAveragePooling: aPooling invocation
 ]
 
-{ #category : #inspecting }
+{ #category : #helper }
 CNNPythonDetector >> isBatchNorm: aRegularization [
 
 	^ importerCNN isBatchnorm:  aRegularization invocation
 ]
 
-{ #category : #nicolas }
+{ #category : #helper }
 CNNPythonDetector >> isConvolution: aConvolution [
 
 ^ importerCNN isConvolution: aConvolution invocation
 ]
 
-{ #category : #inspecting }
+{ #category : #helper }
+CNNPythonDetector >> isDescending: aCollection [
+
+	(self isSame: aCollection) or: [
+		(self isAscending: aCollection) ifTrue: [ ^ false ] ].
+
+	^ true
+]
+
+{ #category : #helper }
 CNNPythonDetector >> isDropout: aRegularization [
 
 	^ importerCNN isDropout: aRegularization invocation
 ]
 
-{ #category : #helpers }
+{ #category : #helper }
 CNNPythonDetector >> isSame: aCollection [
 
-	| counter len |
-	counter := 2.
-	len := aCollection size.
 
-	aCollection do: [ :each |
-		counter < len ifTrue: [
-			(each = (aCollection at: counter)) ifFalse: [ ^ false ].
-			counter := counter + 1 ] ].
 
-	^ true
+
+	^ aCollection allSatisfy: [ :each | aCollection first = each ]
 ]
 
 { #category : #inspecting }
@@ -404,22 +344,6 @@ CNNPythonDetector >> layersWithUselessDropout: layers [
 
 	^layers select: [ :layer |
 		(self layerWithUselessDropout: layer) isNotEmpty ]
-]
-
-{ #category : #visiting }
-CNNPythonDetector >> parseThenModelingFromFile: aPath [
-	"Example of path : '/Users/aurelikama/Documents/Projet/These/parserPythonToJson/sample_design_smell/layers_formation/gh_non_dominating_dow_sampling.py'
-		          asFileReference contents."
-
-	^ self parseThenModelingFromString: aPath asFileReference contents
-]
-
-{ #category : #visiting }
-CNNPythonDetector >> parseThenModelingFromString: aString [
-
-	visitor accept: (PythonParser parseWithErrors: aString).
-
-	^ visitor model
 ]
 
 { #category : #accessing }
