@@ -105,7 +105,7 @@ model.add(MaxPooling2D(pool_size=(2, 2)))
 { #category : #tests }
 CNNPythonDetectorTest >> testHasLargeKernelConvolution [
 
-	| famixModel cnnModelLayers |
+	| famixModel cnnModelLayers cnnModel |
 	famixModel := self createFamixModel: '
 model.add(Conv2D(32, (5, 5))) #<-- Design Smell: large kernel_size (5x5). Ccan be replaced by two 3 × 3, or four 2 × 2 kernels.
 model.add(Activation(''relu''))
@@ -121,20 +121,14 @@ model.add(Conv2D(32, (3, 3)))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 '.
 
-	cnnModelLayers := (self createCNNModel: famixModel) layers.
+	cnnModel := self createCNNModel: famixModel.
+
+	cnnModelLayers := cnnModel layers.
 
 
 	self
-		assert:
-			(designSmellDetector layersWithLargeKernelConvolution:
-				 cnnModelLayers) size
-		equals: 1.
-
-	self
-		assert:
-			(designSmellDetector layersWithLargeKernelConvolution:
-				 cnnModelLayers) first name
-		equals: 'L1'
+		assert: (designSmellDetector hasLargeKernelConvolution: cnnModel)
+		equals: true.
 ]
 
 { #category : #tests }
@@ -484,16 +478,23 @@ model.add(Activation(''relu''))
 	self
 		assert:
 			(designSmellDetector
-				 layersWithNonRepresentativeStatisticsEstimation: cnnModelLayers )
+				 layersWithNonRepresentativeStatisticsEstimation: cnnModelLayers)
 				size
 		equals: 2.
 
 	self
 		assert:
 			(designSmellDetector
-				 layersWithNonRepresentativeStatisticsEstimation: cnnModelLayers )
+				 layersWithNonRepresentativeStatisticsEstimation: cnnModelLayers)
 				first name
-		equals: 'L1'
+		equals: 'L1'.
+
+	self
+		assert:
+			(designSmellDetector
+				 layersWithNonRepresentativeStatisticsEstimation: cnnModelLayers)
+				first sourceAnchor startPos
+		equals: 12
 ]
 
 { #category : #tests }
@@ -539,7 +540,19 @@ model.add(Flatten())
 		assert:
 			(designSmellDetector layersWithUselessDropout: cnnModelLayers)
 				second name
-		equals: 'L3'
+		equals: 'L3'.
+
+	self
+		assert:
+			(designSmellDetector layersWithUselessDropout: cnnModelLayers)
+				first sourceAnchor startPos
+		equals: 192.
+		
+	self
+		assert:
+			(designSmellDetector layersWithUselessDropout: cnnModelLayers)
+				first sourceAnchor endPos
+		equals: 390.
 ]
 
 { #category : #tests }

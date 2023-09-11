@@ -18,14 +18,15 @@ CNNPythonDetector >> batchNormsInLayer: aLayer [
 
 { #category : #'private - accessing' }
 CNNPythonDetector >> convolutions: aModel [
-| results |
-results := OrderedCollection new.
 
-	 aModel layers do: [ :layer |
-		  (self doesLayerContainConvolution: layer) ifTrue: [
-			  results add: layer convolution ] ].
-	
-^results
+	| results |
+	results := OrderedCollection new.
+
+	aModel layers do: [ :layer |
+		( layer hasConvolution) ifTrue: [
+			results add: layer convolution ] ].
+
+	^ results
 ]
 
 { #category : #inspecting }
@@ -86,7 +87,12 @@ CNNPythonDetector >> hasLosingLocalCorrelation: aModel [
 
 	| localsWindowSize |
 	localsWindowSize := aModel layers collect: [ :layer |
-		                    layer convolution kernelSize asInteger ].
+									
+								layer hasConvolution ifTrue:[
+							
+		                    layer convolution kernelSize asInteger]
+		
+		 ].
 
 
 	^ self isDescending: localsWindowSize
@@ -97,7 +103,8 @@ CNNPythonDetector >> hasNoNexpandingFeatureMap: aModel [
 
 	| nbFeaturesMap |
 	nbFeaturesMap := aModel layers collect: [ :layer |
-		                 layer convolution filters asInteger ].
+		layer hasConvolution ifTrue: [  
+		                 layer convolution filters asInteger ]].
 
 
 	^ (self isAscending: nbFeaturesMap) not
@@ -240,7 +247,7 @@ CNNPythonDetector >> isSame: aCollection [
 { #category : #inspecting }
 CNNPythonDetector >> layerWithBiasWithBatchNormalization: aLayer [
 
-	| position results convs batchNorms  |
+	| position results convs batchNorms |
 	convs := OrderedCollection new.
 	batchNorms := OrderedCollection new.
 	position := 1.
@@ -251,9 +258,9 @@ CNNPythonDetector >> layerWithBiasWithBatchNormalization: aLayer [
 		              self isBatchNorm: regularization ].
 
 
-	(self doesLayerContainConvolution:  aLayer )ifTrue:[
-	aLayer convolution useBias & batchNorms isNotEmpty ifTrue: [
-		results := batchNorms ]].
+	( aLayer hasConvolution) ifTrue: [
+		aLayer convolution useBias & batchNorms isNotEmpty ifTrue: [
+			results := batchNorms ] ].
 
 	^ results
 ]
@@ -261,9 +268,9 @@ CNNPythonDetector >> layerWithBiasWithBatchNormalization: aLayer [
 { #category : #'private - accessing' }
 CNNPythonDetector >> layerWithLargeKernelConvolution: aLayer [
 
-	(self doesLayerContainConvolution: aLayer) ifTrue: [
+	( aLayer hasConvolution) ifTrue: [
 		aLayer convolution kernelSize asInteger > 3 ifTrue: [ ^ aLayer ] ].
-	^nil
+	^ nil
 ]
 
 { #category : #inspecting }
