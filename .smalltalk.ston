@@ -1,7 +1,6 @@
 SmalltalkCISpec {
   #loading : [
     SCIMetacelloLoadSpec {
-      #baseline : 'MoosePy',
       #onConflict : #useIncoming,
       #onUpgrade : #useIncoming,
       #ignoreImage : true,
