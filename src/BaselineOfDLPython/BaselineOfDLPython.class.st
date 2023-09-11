@@ -22,8 +22,5 @@ BaselineOfDLPython >> baseline: spec [
 		with: [ spec repository: 'github://moosetechnology/MoosePy' ].
 
 
-	spec
-		package: 'DLPython'
-		with: [
-		spec requires: #( 'MoosePy' 'PythonParser' 'FamixPythonImporter' ) ]
+	
 ]
