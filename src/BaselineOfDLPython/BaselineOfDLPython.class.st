@@ -20,7 +20,10 @@ BaselineOfDLPython >> baseline: spec [
 	spec
 		package: 'MoosePy';
 		package: 'CNN-Famix-Entities';
-		package: 'DL-Python'
-		with: [ spec requires: #( 'PythonParser' 'FamixPythonImporter' ) ].
-	spec group: 'default' with: #( 'CNN-Famix-Entities' 'MoosePy' 'DL-Python' )
+		package: 'DL-Python' with: [
+			spec requires:
+					#( 'CNN-Famix-Entities' 'PythonParser' 'FamixPythonImporter' ) ].
+	spec
+		group: 'default'
+		with: #( 'CNN-Famix-Entities' 'MoosePy' 'DL-Python' )
 ]
