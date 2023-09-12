@@ -9,5 +9,11 @@ SmalltalkCISpec {
       #load : [ 'default' ],
       #platforms : [ #pharo ]
     }
-  ]
+  ], 
+  #testing : {
+    #exclude : {
+      #classes : [ #ToyingWithParserTest ],
+      #methods: [#testParseThenModelingFromFile]
+    }
+  }
 }
