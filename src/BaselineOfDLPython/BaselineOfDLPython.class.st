@@ -12,14 +12,15 @@ BaselineOfDLPython >> baseline: spec [
 		spec
 			repository: 'github://j-brant/SmaCC';
 			loads: #( 'SmaCC_Python' 'SmaCC_Python_Tests' ) ].
-		
-		spec
+
+	spec
 		baseline: 'FamixPythonImporter'
 		with: [ spec repository: 'github://aurpur/famixPythonImporter' ].
 
 	spec
 		package: 'MoosePy';
+		package: 'CNN-Famix-Entities';
 		package: 'DL-Python'
 		with: [ spec requires: #( 'PythonParser' 'FamixPythonImporter' ) ].
-	spec group: 'default' with: #( 'DL-Python' 'MoosePy' )
+	spec group: 'default' with: #( 'CNN-Famix-Entities' 'MoosePy' 'DL-Python' )
 ]
