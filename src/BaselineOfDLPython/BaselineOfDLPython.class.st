@@ -25,5 +25,5 @@ BaselineOfDLPython >> baseline: spec [
 					#( 'CNN-Famix-Entities' 'PythonParser' 'FamixPythonImporter' ) ].
 	spec
 		group: 'default'
-		with: #( 'CNN-Famix-Entities' 'MoosePy' 'DL-Python' )
+		with: #('DL-Python' )
 ]
