@@ -8,7 +8,9 @@ Class {
 BaselineOfDLPython >> baseline: spec [
 
 	<baseline>
-	spec
-		package: 'DL-Python'.
-	spec group: 'default' with: #( 'DL-Python')
+	spec 
+		package: 'MoosePy';
+		package: 'DL-Python'
+		with: [ spec requires: #( 'PythonParser' 'FamixPythonImporter' ) ].
+	spec group: 'default' with: #( 'DL-Python' 'MoosePy' )
 ]
