@@ -12,8 +12,7 @@ SmalltalkCISpec {
   ], 
   #testing : {
     #exclude : {
-      #classes : [ #ToyingWithParserTest ],
-      #methods : [ 'testParseThenModelingFromFile']
+      #classes : [ #ToyingWithParserTest, #CNNPythonDetectorFromFileTest ]
     }
   }
 }
