@@ -8,7 +8,16 @@ Class {
 BaselineOfDLPython >> baseline: spec [
 
 	<baseline>
-	spec 
+	spec baseline: 'PythonParser' with: [
+		spec
+			repository: 'github://j-brant/SmaCC';
+			loads: #( 'SmaCC_Python' 'SmaCC_Python_Tests' ) ].
+		
+		spec
+		baseline: 'FamixPythonImporter'
+		with: [ spec repository: 'github://aurpur/famixPythonImporter' ].
+
+	spec
 		package: 'MoosePy';
 		package: 'DL-Python'
 		with: [ spec requires: #( 'PythonParser' 'FamixPythonImporter' ) ].
